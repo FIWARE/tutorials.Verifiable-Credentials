@@ -69,7 +69,7 @@ CREATE TABLE `service` (
 
 LOCK TABLES `service` WRITE;
 /*!40000 ALTER TABLE `service` DISABLE KEYS */;
-INSERT INTO `service` VALUES ('packet-delivery-service','default','{\"default\":[{\"credentialType\":\"VerifiableCredential\",\"trustedLists\":[{\"type\":\"TRUSTED_ISSUERS\",\"listType\":\"EBSI\",\"endpoint\":\"https://til-pdc.gaia-x.fiware.dev\"}],\"verifyHolder\":false,\"holderClaim\":\"subject\"}]}');
+INSERT INTO `service` VALUES ('vet','default','{\"default\":[{\"credentialType\":\"VerifiableCredential\",\"trustedLists\":[{\"type\":\"TRUSTED_ISSUERS\",\"listType\":\"EBSI\",\"endpoint\":\"http://trusted-issuers-list:8080\"}],\"verifyHolder\":false,\"holderClaim\":\"subject\"}]}');
 /*!40000 ALTER TABLE `service` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
