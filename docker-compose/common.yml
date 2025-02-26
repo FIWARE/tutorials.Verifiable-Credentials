@@ -269,11 +269,17 @@ services:
     container_name: cb-vet
     networks:
       - default
+    depends_on:
+      - credentials-config
     ports:
       - 1030:80
     environment:
       - TENANT=vet
       - DEBUG=broker:*
+      - VERIFY_CREDENTIALS=true
+      - CONFIG_SERVICE=credentials-config:8080
+      - WEB_APP_HOST=tutorial
+      - WEB_APP_PORT=${TUTORIAL_APP_PORT}
 
   weather:
     labels:
