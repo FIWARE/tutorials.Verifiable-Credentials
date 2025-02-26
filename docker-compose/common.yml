@@ -65,6 +65,10 @@ services:
       - "MYSQL_ROOT_PASSWORD=root"
       - "MYSQL_DATABASE=db"
     restart: "always"
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      timeout: 5s
+      retries: 10
     networks:
       - default
     volumes:
@@ -83,6 +87,10 @@ services:
       - "MYSQL_ROOT_PASSWORD=root"
       - "MYSQL_DATABASE=db"
     restart: "always"
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      timeout: 5s
+      retries: 10
     networks:
       - default
     volumes:
@@ -131,8 +139,13 @@ services:
     ports:
       - "8081:8080"
     restart: "always"
+    healthcheck:
+      test: ["CMD", "ping", "localhost"]
+      timeout: 5s
+      retries: 10
     depends_on:
-      - "mysql-config-db"
+      mysql-config-db:
+        condition: service_healthy
     networks:
       - default
 
@@ -153,7 +166,8 @@ services:
       - "8080:8080"
     restart: "always"
     depends_on:
-      - "mysql-trust-db"
+      mysql-trust-db:
+        condition: service_healthy
     networks:
       - default
 
@@ -166,7 +180,8 @@ services:
     hostname: tutorial
     container_name: fiware-tutorial
     depends_on:
-      - mongo-db
+      mongo-db:
+        condition: service_healthy
     networks:
       - default
     expose:
@@ -192,7 +207,8 @@ services:
     hostname: iot-agent
     container_name: fiware-iot-agent
     depends_on:
-      - mongo-db
+      mongo-db:
+        condition: service_healthy
     networks:
       - default
     expose:
@@ -270,7 +286,8 @@ services:
     networks:
       - default
     depends_on:
-      - credentials-config
+      credentials-config:
+        condition: service_started
     ports:
       - 1030:80
     environment:
