@@ -187,42 +187,455 @@ git checkout NGSI-LD
 
 # Verifiable Credentials
 
-## Using Verifiable Credentials
+Unencoded in plain text, a verifiable credential, could be a claim to be anything. A verifiable credential will typically be a snippet of JSON-LD,
+with the `type: VerifiableCredential` - in the example below, the **Animal Welfare** department wants to issue a **Data Access Claim** to **Alice**. The details of
+the role for **Data Access** are the claim. Since **Animal Welfare** is creating the credential, they are the issuer, and **Alice** is the subject. The issuer
+signs the credential with their private key.
 
-### Generating a Verifiable Credential
+The private key `0b6366519a40eb4f384f7f84cf8bb716683ad1af8adbe60e59fe24ba042e396a` is used for all users throughout the tutorial,
+since the associated public key is the one that has been stored on the public web as a decentralised identifier. The necessary information
+can be generated using a script as shown.
 
-#### 3️⃣ Request:
+
+```javascript
+import crypto from 'crypto';
+import elliptic from 'elliptic';
+
+// Request a 32 byte key
+const size = parseInt(process.argv.slice(2)[0]) || 32;
+const randomString = crypto.randomBytes(size).toString("hex");
+const key = randomString;
+
+console.log(`Key (hex): ${key}`)  // ee48d32e6c724c4d
+
+// Calculate the `secp256k1` curve and build the public key
+const ec = new elliptic.ec('secp256k1');
+const prv = ec.keyFromPrivate(key, 'hex');
+const pub = prv.getPublic();
+console.log(`Public (hex): ${prv.getPublic('hex')}`)
+console.log(`x (hex): ${pub.x.toBuffer().toString('hex')}`)
+console.log(`y (hex): ${pub.y.toBuffer().toString('hex')}`)
+console.log(`x (base64): ${pub.x.toBuffer().toString('base64')}`)
+console.log(`y (base64): ${pub.y.toBuffer().toString('base64')}`)
+console.log(`-- kty: EC, crv: secp256k1`)
+```
+
+
+
+## Generating a Verifiable Credential
+
+Since **Alice** works for the **Animal Welfare** department, she needs to have a verfiable credential to prove she
+works there to access the **Vet's** context broker.
+
+The the **Animal Welfare** department `did:web:fiware.github.io:tutorials.Step-by-Step:animal-welfare` therefore issues **Alice**
+`did:web:fiware.github.io:tutorials.Step-by-Step:alice` a verifiable with an **Access Claim**.
+This can be signed using a private key. Credentials using the the fixed private key
+`0b6366519a40eb4f384f7f84cf8bb716683ad1af8adbe60e59fe24ba042e396a` can be generated from the
+tutorial application at [http://localhost:3000/credentials](http://localhost:3000/credentials)
+
+The three-letter claims `iss`, `nbf`, `exp`, `sub` come from [RFC 7519](https://www.rfc-editor.org/rfc/rfc7519), and can include
+`nbf` - not before and `exp` - expiry date to limit a validity of a claim.
+
+
+#### 1️⃣ Request:
 
 ```console
-
+curl -L 'localhost:3000/vc/generate' \
+-H 'Content-Type: application/json' \
+-H 'Cookie: connect.sid=s%3AOb1s0q9UDOLwtLPs_xLMxP0aYTRD9wZQ.z5sNCOJ0IStsgf1f4C5AoDhtWZXVmjz7bmZiz2Ywi7k' \
+--data-raw '{
+    "key": "0b6366519a40eb4f384f7f84cf8bb716683ad1af8adbe60e59fe24ba042e396a",
+    "iss": "did:web:fiware.github.io:tutorials.Step-by-Step:animal-welfare",
+    "sub": "did:web:fiware.github.io:tutorials.Step-by-Step:alice",
+    "nbf": 1754060243,
+    "vc": {
+        "@context": [
+            "https://www.w3.org/2018/credentials/v1",
+            "https://fiware.github.io/tutorials.Step-by-Step/credentials.jsonld"
+        ],
+        "type": [
+            "VerifiableCredential",
+            "OperatorCredential"
+        ],
+        "credentialSubject": {
+            "firstName": "Alice",
+            "lastName": "User",
+            "eMail": "alice@test.com",
+            "roles": [
+                "OPERATOR"
+            ]
+        }
+    }
+}'
 ```
 
 #### Response:
 
-### Generating Verifiable Presentation
+The response is a JWT token which is handed to **Alice** - this the equivalent of receiving an **Employee Badge**
 
-#### 3️⃣ Request:
+
+```json
+{
+    "jwt": "eyJhbGciOiJFUzI1NksiLCJ0eXAiOiJKV1QifQ.eyJ2YyI6eyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvMjAxOC9jcmVkZW50aWFscy92MSIsImh0dHBzOi8vZml3YXJlLmdpdGh1Yi5pby90dXRvcmlhbHMuU3RlcC1ieS1TdGVwL2NyZWRlbnRpYWxzLmpzb25sZCJdLCJ0eXBlIjpbIlZlcmlmaWFibGVDcmVkZW50aWFsIiwiT3BlcmF0b3JDcmVkZW50aWFsIl0sImNyZWRlbnRpYWxTdWJqZWN0Ijp7ImZpcnN0TmFtZSI6IkFsaWNlIiwibGFzdE5hbWUiOiJVc2VyIiwiZU1haWwiOiJhbGljZUB0ZXN0LmNvbSIsInJvbGVzIjpbIk9QRVJBVE9SIl19fSwic3ViIjoiZGlkOndlYjpmaXdhcmUuZ2l0aHViLmlvOnR1dG9yaWFscy5TdGVwLWJ5LVN0ZXA6YWxpY2UiLCJuYmYiOjE3NTQwNjAyNDMsImlzcyI6ImRpZDp3ZWI6Zml3YXJlLmdpdGh1Yi5pbzp0dXRvcmlhbHMuU3RlcC1ieS1TdGVwOmFuaW1hbC13ZWxmYXJlIn0.YEoJtrpuR-bxDk-Y8yV0FPcCjtHkczq17vt4_iUV2D-kSbkAFjqkcAj5Vph48O4OeESI8GxoRZRH_yP-oat5hg"
+}
+```
+
+## Generating Verifiable Presentation
+
+When going to the **Vet**, **Alice** is challenged if she really does work for **Animal Welfare**, she needs to present one or more credential in a Verifiable Presentation.
+Each credential takes the form of a JWT token. In this case the issuer `iss` is **Alice** herself, and she is also the subject matter `sub`.
+Usually these presentations have an `exp` in the near future to stop potential man-in-the-middle attacks.
+
+#### 2️⃣ Request:
 
 ```console
-
+curl -L 'localhost:3000/vp/generate' \
+-H 'Content-Type: application/json' \
+-H 'Cookie: connect.sid=s%3AOb1s0q9UDOLwtLPs_xLMxP0aYTRD9wZQ.z5sNCOJ0IStsgf1f4C5AoDhtWZXVmjz7bmZiz2Ywi7k' \
+--data-raw '{
+    "iss": "did:web:fiware.github.io:tutorials.Step-by-Step:alice",
+    "sub": "did:web:fiware.github.io:tutorials.Step-by-Step:alice",
+    "payload": {
+        "@context": [
+            "https://www.w3.org/2018/credentials/v1"
+        ],
+        "type": [
+            "VerifiablePresentation"
+        ],
+        "verifiableCredential": [
+            "eyJhbGciOiJFUzI1NksiLCJ0eXAiOiJKV1QifQ.eyJ2YyI6eyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvMjAxOC9jcmVkZW50aWFscy92MSIsImh0dHBzOi8vZml3YXJlLmdpdGh1Yi5pby90dXRvcmlhbHMuU3RlcC1ieS1TdGVwL2NyZWRlbnRpYWxzLmpzb25sZCJdLCJ0eXBlIjpbIlZlcmlmaWFibGVDcmVkZW50aWFsIiwiT3BlcmF0b3JDcmVkZW50aWFsIl0sImNyZWRlbnRpYWxTdWJqZWN0Ijp7ImZpcnN0TmFtZSI6IkFsaWNlIiwibGFzdE5hbWUiOiJVc2VyIiwiZU1haWwiOiJhbGljZUB0ZXN0LmNvbSIsInJvbGVzIjpbIk9QRVJBVE9SIl19fSwic3ViIjoiZGlkOndlYjpmaXdhcmUuZ2l0aHViLmlvOnR1dG9yaWFscy5TdGVwLWJ5LVN0ZXA6YWxpY2UiLCJuYmYiOjE3NTQwNjAyNDMsImlzcyI6ImRpZDp3ZWI6Zml3YXJlLmdpdGh1Yi5pbzp0dXRvcmlhbHMuU3RlcC1ieS1TdGVwOmFuaW1hbC13ZWxmYXJlIn0.YEoJtrpuR-bxDk-Y8yV0FPcCjtHkczq17vt4_iUV2D-kSbkAFjqkcAj5Vph48O4OeESI8GxoRZRH_yP-oat5hg"
+        ]
+    }
+}'
 ```
 
 #### Response:
 
+The response is yet another JWT token.
 
-### Verifying a Verifiable Presentation
+```json
+{
+    "jwt": "eyJhbGciOiJFUzI1NksiLCJ0eXAiOiJKV1QifQ.eyJ2cCI6eyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvMjAxOC9jcmVkZW50aWFscy92MSJdLCJ0eXBlIjpbIlZlcmlmaWFibGVQcmVzZW50YXRpb24iXSwidmVyaWZpYWJsZUNyZWRlbnRpYWwiOlsiZXlKaGJHY2lPaUpGVXpJMU5rc2lMQ0owZVhBaU9pSktWMVFpZlEuZXlKMll5STZleUpBWTI5dWRHVjRkQ0k2V3lKb2RIUndjem92TDNkM2R5NTNNeTV2Y21jdk1qQXhPQzlqY21Wa1pXNTBhV0ZzY3k5Mk1TSXNJbWgwZEhCek9pOHZabWwzWVhKbExtZHBkR2gxWWk1cGJ5OTBkWFJ2Y21saGJITXVVM1JsY0MxaWVTMVRkR1Z3TDJOeVpXUmxiblJwWVd4ekxtcHpiMjVzWkNKZExDSjBlWEJsSWpwYklsWmxjbWxtYVdGaWJHVkRjbVZrWlc1MGFXRnNJaXdpVDNCbGNtRjBiM0pEY21Wa1pXNTBhV0ZzSWwwc0ltTnlaV1JsYm5ScFlXeFRkV0pxWldOMElqcDdJbVpwY25OMFRtRnRaU0k2SWtGc2FXTmxJaXdpYkdGemRFNWhiV1VpT2lKVmMyVnlJaXdpWlUxaGFXd2lPaUpoYkdsalpVQjBaWE4wTG1OdmJTSXNJbkp2YkdWeklqcGJJazlRUlZKQlZFOVNJbDE5ZlN3aWMzVmlJam9pWkdsa09uZGxZanBtYVhkaGNtVXVaMmwwYUhWaUxtbHZPblIxZEc5eWFXRnNjeTVUZEdWd0xXSjVMVk4wWlhBNllXeHBZMlVpTENKdVltWWlPakUzTlRRd05qQXlORE1zSW1semN5STZJbVJwWkRwM1pXSTZabWwzWVhKbExtZHBkR2gxWWk1cGJ6cDBkWFJ2Y21saGJITXVVM1JsY0MxaWVTMVRkR1Z3T21GdWFXMWhiQzEzWld4bVlYSmxJbjAuWUVvSnRycHVSLWJ4RGstWTh5VjBGUGNDanRIa2N6cTE3dnQ0X2lVVjJELWtTYmtBRmpxa2NBajVWcGg0OE80T2VFU0k4R3hvUlpSSF95UC1vYXQ1aGciXX0sImlzcyI6ImRpZDp3ZWI6Zml3YXJlLmdpdGh1Yi5pbzp0dXRvcmlhbHMuU3RlcC1ieS1TdGVwOmFsaWNlIn0.6_wuCNurZV5zawDKsPfJEEqWcmTpoTMG7r58HxAKJUkQB2bkRza2C7UoWOFu7DgHqDx9moSrQqrQ0n1Yp9JDDA"
+}
+```
+
+
+## Verifying a Verifiable Presentation
+
+On receiving a Verifiable Presentation, the **Vet** must first check that this really is a presentation from **Alice** about **Alice**, and that it holds a Verifiable Presentation which in turn holds one or more claims.
 
 #### 3️⃣ Request:
 
 ```console
-
+curl -L 'localhost:3000/vp/verify' \
+-H 'Content-Type: application/json' \
+-d '{
+    "jwt": "eyJhbGciOiJFUzI1NksiLCJ0eXAiOiJKV1QifQ.eyJ2cCI6eyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvMjAxOC9jcmVkZW50aWFscy92MSJdLCJ0eXBlIjpbIlZlcmlmaWFibGVQcmVzZW50YXRpb24iXSwidmVyaWZpYWJsZUNyZWRlbnRpYWwiOlsiZXlKaGJHY2lPaUpGVXpJMU5rc2lMQ0owZVhBaU9pSktWMVFpZlEuZXlKMll5STZleUpBWTI5dWRHVjRkQ0k2V3lKb2RIUndjem92TDNkM2R5NTNNeTV2Y21jdk1qQXhPQzlqY21Wa1pXNTBhV0ZzY3k5Mk1TSXNJbWgwZEhCek9pOHZabWwzWVhKbExtZHBkR2gxWWk1cGJ5OTBkWFJ2Y21saGJITXVVM1JsY0MxaWVTMVRkR1Z3TDJOeVpXUmxiblJwWVd4ekxtcHpiMjVzWkNKZExDSjBlWEJsSWpwYklsWmxjbWxtYVdGaWJHVkRjbVZrWlc1MGFXRnNJaXdpVDNCbGNtRjBiM0pEY21Wa1pXNTBhV0ZzSWwwc0ltTnlaV1JsYm5ScFlXeFRkV0pxWldOMElqcDdJbVpwY25OMFRtRnRaU0k2SWtGc2FXTmxJaXdpYkdGemRFNWhiV1VpT2lKVmMyVnlJaXdpWlUxaGFXd2lPaUpoYkdsalpVQjBaWE4wTG1OdmJTSXNJbkp2YkdWeklqcGJJazlRUlZKQlZFOVNJbDE5ZlN3aWMzVmlJam9pWkdsa09uZGxZanBtYVhkaGNtVXVaMmwwYUhWaUxtbHZPblIxZEc5eWFXRnNjeTVUZEdWd0xXSjVMVk4wWlhBNllXeHBZMlVpTENKdVltWWlPakUzTlRRd05qQXlORE1zSW1semN5STZJbVJwWkRwM1pXSTZabWwzWVhKbExtZHBkR2gxWWk1cGJ6cDBkWFJ2Y21saGJITXVVM1JsY0MxaWVTMVRkR1Z3T21GdWFXMWhiQzEzWld4bVlYSmxJbjAuWUVvSnRycHVSLWJ4RGstWTh5VjBGUGNDanRIa2N6cTE3dnQ0X2lVVjJELWtTYmtBRmpxa2NBajVWcGg0OE80T2VFU0k4R3hvUlpSSF95UC1vYXQ1aGciXX0sImlzcyI6ImRpZDp3ZWI6Zml3YXJlLmdpdGh1Yi5pbzp0dXRvcmlhbHMuU3RlcC1ieS1TdGVwOmFsaWNlIn0.6_wuCNurZV5zawDKsPfJEEqWcmTpoTMG7r58HxAKJUkQB2bkRza2C7UoWOFu7DgHqDx9moSrQqrQ0n1Yp9JDDA"
+}'
 ```
 
 #### Response:
+
+The verifier checks that the signed JWT ending `...JDDA` matches with the public key found at [`https://fiware.github.io/tutorials.Step-by-Step/alice/did.json`](https://fiware.github.io/tutorials.Step-by-Step/alice/did.json),
+in other words, that the presentation really came from **Alice** - the Verfiable Presentation holds one claim - another JWT ending `-oat5hg`
+
+```json
+{
+    "verified": true,
+    "payload": {
+        "vp": {
+            "@context": [
+                "https://www.w3.org/2018/credentials/v1"
+            ],
+            "type": [
+                "VerifiablePresentation"
+            ],
+            "verifiableCredential": [
+                "eyJhbGciOiJFUzI1NksiLCJ0eXAiOiJKV1QifQ.eyJ2YyI6eyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvMjAxOC9jcmVkZW50aWFscy92MSIsImh0dHBzOi8vZml3YXJlLmdpdGh1Yi5pby90dXRvcmlhbHMuU3RlcC1ieS1TdGVwL2NyZWRlbnRpYWxzLmpzb25sZCJdLCJ0eXBlIjpbIlZlcmlmaWFibGVDcmVkZW50aWFsIiwiT3BlcmF0b3JDcmVkZW50aWFsIl0sImNyZWRlbnRpYWxTdWJqZWN0Ijp7ImZpcnN0TmFtZSI6IkFsaWNlIiwibGFzdE5hbWUiOiJVc2VyIiwiZU1haWwiOiJhbGljZUB0ZXN0LmNvbSIsInJvbGVzIjpbIk9QRVJBVE9SIl19fSwic3ViIjoiZGlkOndlYjpmaXdhcmUuZ2l0aHViLmlvOnR1dG9yaWFscy5TdGVwLWJ5LVN0ZXA6YWxpY2UiLCJuYmYiOjE3NTQwNjAyNDMsImlzcyI6ImRpZDp3ZWI6Zml3YXJlLmdpdGh1Yi5pbzp0dXRvcmlhbHMuU3RlcC1ieS1TdGVwOmFuaW1hbC13ZWxmYXJlIn0.YEoJtrpuR-bxDk-Y8yV0FPcCjtHkczq17vt4_iUV2D-kSbkAFjqkcAj5Vph48O4OeESI8GxoRZRH_yP-oat5hg"
+            ]
+        },
+        "iss": "did:web:fiware.github.io:tutorials.Step-by-Step:alice"
+    },
+    "didResolutionResult": {
+        "didDocument": {
+            "@context": [
+                "https://www.w3.org/ns/did/v1",
+                "https://w3id.org/security/suites/jws-2020/v1"
+            ],
+            "id": "did:web:fiware.github.io:tutorials.Step-by-Step:alice",
+            "verificationMethod": [
+                {
+                    "id": "did:fiware.github.io:tutorials.Step-by-Step:alice#owner",
+                    "type": "JsonWebKey2020",
+                    "controller": "did:web:fiware.github.io:tutorials.Step-by-Step:alice",
+                    "publicKeyJwk": {
+                        "kty": "EC",
+                        "crv": "secp256k1",
+                        "x": "Nd3DeQ7G/1pTeYM6viWK6plbSD9E7cA9C2ONG9qG3CQ=",
+                        "y": "LuMt0dFWni1/fs/VqfjNOHAZT3PWGxKU8kUlLffGtjM="
+                    }
+                }
+            ],
+            "authentication": [
+                "did:web:fiware.github.io:tutorials.Step-by-Step:alice#owner"
+            ],
+            "assertionMethod": [
+                "did:web:fiware.github.io:tutorials.Step-by-Step:alice#owner"
+            ]
+        },
+        "didDocumentMetadata": {},
+        "didResolutionMetadata": {
+            "contentType": "application/did+ld+json"
+        }
+    },
+    "issuer": "did:web:fiware.github.io:tutorials.Step-by-Step:alice",
+    "signer": {
+        "id": "did:fiware.github.io:tutorials.Step-by-Step:alice#owner",
+        "type": "JsonWebKey2020",
+        "controller": "did:web:fiware.github.io:tutorials.Step-by-Step:alice",
+        "publicKeyJwk": {
+            "kty": "EC",
+            "crv": "secp256k1",
+            "x": "Nd3DeQ7G/1pTeYM6viWK6plbSD9E7cA9C2ONG9qG3CQ=",
+            "y": "LuMt0dFWni1/fs/VqfjNOHAZT3PWGxKU8kUlLffGtjM="
+        }
+    },
+    "jwt": "eyJhbGciOiJFUzI1NksiLCJ0eXAiOiJKV1QifQ.eyJ2cCI6eyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvMjAxOC9jcmVkZW50aWFscy92MSJdLCJ0eXBlIjpbIlZlcmlmaWFibGVQcmVzZW50YXRpb24iXSwidmVyaWZpYWJsZUNyZWRlbnRpYWwiOlsiZXlKaGJHY2lPaUpGVXpJMU5rc2lMQ0owZVhBaU9pSktWMVFpZlEuZXlKMll5STZleUpBWTI5dWRHVjRkQ0k2V3lKb2RIUndjem92TDNkM2R5NTNNeTV2Y21jdk1qQXhPQzlqY21Wa1pXNTBhV0ZzY3k5Mk1TSXNJbWgwZEhCek9pOHZabWwzWVhKbExtZHBkR2gxWWk1cGJ5OTBkWFJ2Y21saGJITXVVM1JsY0MxaWVTMVRkR1Z3TDJOeVpXUmxiblJwWVd4ekxtcHpiMjVzWkNKZExDSjBlWEJsSWpwYklsWmxjbWxtYVdGaWJHVkRjbVZrWlc1MGFXRnNJaXdpVDNCbGNtRjBiM0pEY21Wa1pXNTBhV0ZzSWwwc0ltTnlaV1JsYm5ScFlXeFRkV0pxWldOMElqcDdJbVpwY25OMFRtRnRaU0k2SWtGc2FXTmxJaXdpYkdGemRFNWhiV1VpT2lKVmMyVnlJaXdpWlUxaGFXd2lPaUpoYkdsalpVQjBaWE4wTG1OdmJTSXNJbkp2YkdWeklqcGJJazlRUlZKQlZFOVNJbDE5ZlN3aWMzVmlJam9pWkdsa09uZGxZanBtYVhkaGNtVXVaMmwwYUhWaUxtbHZPblIxZEc5eWFXRnNjeTVUZEdWd0xXSjVMVk4wWlhBNllXeHBZMlVpTENKdVltWWlPakUzTlRRd05qQXlORE1zSW1semN5STZJbVJwWkRwM1pXSTZabWwzWVhKbExtZHBkR2gxWWk1cGJ6cDBkWFJ2Y21saGJITXVVM1JsY0MxaWVTMVRkR1Z3T21GdWFXMWhiQzEzWld4bVlYSmxJbjAuWUVvSnRycHVSLWJ4RGstWTh5VjBGUGNDanRIa2N6cTE3dnQ0X2lVVjJELWtTYmtBRmpxa2NBajVWcGg0OE80T2VFU0k4R3hvUlpSSF95UC1vYXQ1aGciXX0sImlzcyI6ImRpZDp3ZWI6Zml3YXJlLmdpdGh1Yi5pbzp0dXRvcmlhbHMuU3RlcC1ieS1TdGVwOmFsaWNlIn0.6_wuCNurZV5zawDKsPfJEEqWcmTpoTMG7r58HxAKJUkQB2bkRza2C7UoWOFu7DgHqDx9moSrQqrQ0n1Yp9JDDA",
+    "policies": {},
+    "verifiablePresentation": {
+        "verifiableCredential": [
+            {
+                "credentialSubject": {
+                    "firstName": "Alice",
+                    "lastName": "User",
+                    "eMail": "alice@test.com",
+                    "roles": [
+                        "OPERATOR"
+                    ],
+                    "id": "did:web:fiware.github.io:tutorials.Step-by-Step:alice"
+                },
+                "issuer": {
+                    "id": "did:web:fiware.github.io:tutorials.Step-by-Step:animal-welfare"
+                },
+                "type": [
+                    "VerifiableCredential",
+                    "OperatorCredential"
+                ],
+                "@context": [
+                    "https://www.w3.org/2018/credentials/v1",
+                    "https://fiware.github.io/tutorials.Step-by-Step/credentials.jsonld"
+                ],
+                "issuanceDate": "2025-08-01T14:57:23.000Z",
+                "proof": {
+                    "type": "JwtProof2020",
+                    "jwt": "eyJhbGciOiJFUzI1NksiLCJ0eXAiOiJKV1QifQ.eyJ2YyI6eyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvMjAxOC9jcmVkZW50aWFscy92MSIsImh0dHBzOi8vZml3YXJlLmdpdGh1Yi5pby90dXRvcmlhbHMuU3RlcC1ieS1TdGVwL2NyZWRlbnRpYWxzLmpzb25sZCJdLCJ0eXBlIjpbIlZlcmlmaWFibGVDcmVkZW50aWFsIiwiT3BlcmF0b3JDcmVkZW50aWFsIl0sImNyZWRlbnRpYWxTdWJqZWN0Ijp7ImZpcnN0TmFtZSI6IkFsaWNlIiwibGFzdE5hbWUiOiJVc2VyIiwiZU1haWwiOiJhbGljZUB0ZXN0LmNvbSIsInJvbGVzIjpbIk9QRVJBVE9SIl19fSwic3ViIjoiZGlkOndlYjpmaXdhcmUuZ2l0aHViLmlvOnR1dG9yaWFscy5TdGVwLWJ5LVN0ZXA6YWxpY2UiLCJuYmYiOjE3NTQwNjAyNDMsImlzcyI6ImRpZDp3ZWI6Zml3YXJlLmdpdGh1Yi5pbzp0dXRvcmlhbHMuU3RlcC1ieS1TdGVwOmFuaW1hbC13ZWxmYXJlIn0.YEoJtrpuR-bxDk-Y8yV0FPcCjtHkczq17vt4_iUV2D-kSbkAFjqkcAj5Vph48O4OeESI8GxoRZRH_yP-oat5hg"
+                }
+            }
+        ],
+        "holder": "did:web:fiware.github.io:tutorials.Step-by-Step:alice",
+        "type": [
+            "VerifiablePresentation"
+        ],
+        "@context": [
+            "https://www.w3.org/2018/credentials/v1"
+        ],
+        "proof": {
+            "type": "JwtProof2020",
+            "jwt": "eyJhbGciOiJFUzI1NksiLCJ0eXAiOiJKV1QifQ.eyJ2cCI6eyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvMjAxOC9jcmVkZW50aWFscy92MSJdLCJ0eXBlIjpbIlZlcmlmaWFibGVQcmVzZW50YXRpb24iXSwidmVyaWZpYWJsZUNyZWRlbnRpYWwiOlsiZXlKaGJHY2lPaUpGVXpJMU5rc2lMQ0owZVhBaU9pSktWMVFpZlEuZXlKMll5STZleUpBWTI5dWRHVjRkQ0k2V3lKb2RIUndjem92TDNkM2R5NTNNeTV2Y21jdk1qQXhPQzlqY21Wa1pXNTBhV0ZzY3k5Mk1TSXNJbWgwZEhCek9pOHZabWwzWVhKbExtZHBkR2gxWWk1cGJ5OTBkWFJ2Y21saGJITXVVM1JsY0MxaWVTMVRkR1Z3TDJOeVpXUmxiblJwWVd4ekxtcHpiMjVzWkNKZExDSjBlWEJsSWpwYklsWmxjbWxtYVdGaWJHVkRjbVZrWlc1MGFXRnNJaXdpVDNCbGNtRjBiM0pEY21Wa1pXNTBhV0ZzSWwwc0ltTnlaV1JsYm5ScFlXeFRkV0pxWldOMElqcDdJbVpwY25OMFRtRnRaU0k2SWtGc2FXTmxJaXdpYkdGemRFNWhiV1VpT2lKVmMyVnlJaXdpWlUxaGFXd2lPaUpoYkdsalpVQjBaWE4wTG1OdmJTSXNJbkp2YkdWeklqcGJJazlRUlZKQlZFOVNJbDE5ZlN3aWMzVmlJam9pWkdsa09uZGxZanBtYVhkaGNtVXVaMmwwYUhWaUxtbHZPblIxZEc5eWFXRnNjeTVUZEdWd0xXSjVMVk4wWlhBNllXeHBZMlVpTENKdVltWWlPakUzTlRRd05qQXlORE1zSW1semN5STZJbVJwWkRwM1pXSTZabWwzWVhKbExtZHBkR2gxWWk1cGJ6cDBkWFJ2Y21saGJITXVVM1JsY0MxaWVTMVRkR1Z3T21GdWFXMWhiQzEzWld4bVlYSmxJbjAuWUVvSnRycHVSLWJ4RGstWTh5VjBGUGNDanRIa2N6cTE3dnQ0X2lVVjJELWtTYmtBRmpxa2NBajVWcGg0OE80T2VFU0k4R3hvUlpSSF95UC1vYXQ1aGciXX0sImlzcyI6ImRpZDp3ZWI6Zml3YXJlLmdpdGh1Yi5pbzp0dXRvcmlhbHMuU3RlcC1ieS1TdGVwOmFsaWNlIn0.6_wuCNurZV5zawDKsPfJEEqWcmTpoTMG7r58HxAKJUkQB2bkRza2C7UoWOFu7DgHqDx9moSrQqrQ0n1Yp9JDDA"
+        }
+    }
+}
+```
+
+## Verifying a Verifiable Credential
+
+The JWT ending `-oat5hg` is Verfiable Credential which can also be decoded and verified. In this case we can see that we have a
+credential which was issued and signed by **Animal Welfare** - `did:web:fiware.github.io:tutorials.Step-by-Step:animal-welfare`
+and the subject was `did:web:fiware.github.io:tutorials.Step-by-Step:alice`
+
+#### 4️⃣ Request:
+
+```console
+curl -L 'localhost:3000/vc/verify' \
+-H 'Content-Type: application/json' \
+-H 'Cookie: connect.sid=s%3AskU1U3VI7mOAriJ7wd1-nV7DrfPNhOir.dVTi9sdMEtEv2Jlh5kACZvffzr%2FpDi5qmeGUotw38bc' \
+-d '{
+    "jwt": "eyJhbGciOiJFUzI1NksiLCJ0eXAiOiJKV1QifQ.eyJ2YyI6eyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvMjAxOC9jcmVkZW50aWFscy92MSIsImh0dHBzOi8vZml3YXJlLmdpdGh1Yi5pby90dXRvcmlhbHMuU3RlcC1ieS1TdGVwL2NyZWRlbnRpYWxzLmpzb25sZCJdLCJ0eXBlIjpbIlZlcmlmaWFibGVDcmVkZW50aWFsIiwiT3BlcmF0b3JDcmVkZW50aWFsIl0sImNyZWRlbnRpYWxTdWJqZWN0Ijp7ImZpcnN0TmFtZSI6IkFsaWNlIiwibGFzdE5hbWUiOiJVc2VyIiwiZU1haWwiOiJhbGljZUB0ZXN0LmNvbSIsInJvbGVzIjpbIk9QRVJBVE9SIl19fSwic3ViIjoiZGlkOndlYjpmaXdhcmUuZ2l0aHViLmlvOnR1dG9yaWFscy5TdGVwLWJ5LVN0ZXA6YWxpY2UiLCJuYmYiOjE3NTQwNjAyNDMsImlzcyI6ImRpZDp3ZWI6Zml3YXJlLmdpdGh1Yi5pbzp0dXRvcmlhbHMuU3RlcC1ieS1TdGVwOmFuaW1hbC13ZWxmYXJlIn0.YEoJtrpuR-bxDk-Y8yV0FPcCjtHkczq17vt4_iUV2D-kSbkAFjqkcAj5Vph48O4OeESI8GxoRZRH_yP-oat5hg"
+}'
+```
+
+#### Response:
+
+```json
+{
+    "verified": true,
+    "payload": {
+        "vc": {
+            "@context": [
+                "https://www.w3.org/2018/credentials/v1",
+                "https://fiware.github.io/tutorials.Step-by-Step/credentials.jsonld"
+            ],
+            "type": [
+                "VerifiableCredential",
+                "OperatorCredential"
+            ],
+            "credentialSubject": {
+                "firstName": "Alice",
+                "lastName": "User",
+                "eMail": "alice@test.com",
+                "roles": [
+                    "OPERATOR"
+                ]
+            }
+        },
+        "sub": "did:web:fiware.github.io:tutorials.Step-by-Step:alice",
+        "nbf": 1754060243,
+        "iss": "did:web:fiware.github.io:tutorials.Step-by-Step:animal-welfare"
+    },
+    "didResolutionResult": {
+        "didDocument": {
+            "@context": [
+                "https://www.w3.org/ns/did/v1",
+                "https://w3id.org/security/suites/jws-2020/v1"
+            ],
+            "id": "did:web:fiware.github.io:tutorials.Step-by-Step:animal-welfare",
+            "verificationMethod": [
+                {
+                    "id": "did:fiware.github.io:tutorials.Step-by-Step:animal-welfare#owner",
+                    "type": "JsonWebKey2020",
+                    "controller": "did:web:fiware.github.io:tutorials.Step-by-Step:animal-welfare",
+                    "publicKeyJwk": {
+                        "kty": "EC",
+                        "crv": "secp256k1",
+                        "x": "Nd3DeQ7G/1pTeYM6viWK6plbSD9E7cA9C2ONG9qG3CQ=",
+                        "y": "LuMt0dFWni1/fs/VqfjNOHAZT3PWGxKU8kUlLffGtjM="
+                    }
+                }
+            ],
+            "authentication": [
+                "did:web:fiware.github.io:tutorials.Step-by-Step:animal-welfare#owner"
+            ],
+            "assertionMethod": [
+                "did:web:fiware.github.io:tutorials.Step-by-Step:animal-welfare#owner"
+            ]
+        },
+        "didDocumentMetadata": {},
+        "didResolutionMetadata": {
+            "contentType": "application/did+ld+json"
+        }
+    },
+    "issuer": "did:web:fiware.github.io:tutorials.Step-by-Step:animal-welfare",
+    "signer": {
+        "id": "did:fiware.github.io:tutorials.Step-by-Step:animal-welfare#owner",
+        "type": "JsonWebKey2020",
+        "controller": "did:web:fiware.github.io:tutorials.Step-by-Step:animal-welfare",
+        "publicKeyJwk": {
+            "kty": "EC",
+            "crv": "secp256k1",
+            "x": "Nd3DeQ7G/1pTeYM6viWK6plbSD9E7cA9C2ONG9qG3CQ=",
+            "y": "LuMt0dFWni1/fs/VqfjNOHAZT3PWGxKU8kUlLffGtjM="
+        }
+    },
+    "jwt": "eyJhbGciOiJFUzI1NksiLCJ0eXAiOiJKV1QifQ.eyJ2YyI6eyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvMjAxOC9jcmVkZW50aWFscy92MSIsImh0dHBzOi8vZml3YXJlLmdpdGh1Yi5pby90dXRvcmlhbHMuU3RlcC1ieS1TdGVwL2NyZWRlbnRpYWxzLmpzb25sZCJdLCJ0eXBlIjpbIlZlcmlmaWFibGVDcmVkZW50aWFsIiwiT3BlcmF0b3JDcmVkZW50aWFsIl0sImNyZWRlbnRpYWxTdWJqZWN0Ijp7ImZpcnN0TmFtZSI6IkFsaWNlIiwibGFzdE5hbWUiOiJVc2VyIiwiZU1haWwiOiJhbGljZUB0ZXN0LmNvbSIsInJvbGVzIjpbIk9QRVJBVE9SIl19fSwic3ViIjoiZGlkOndlYjpmaXdhcmUuZ2l0aHViLmlvOnR1dG9yaWFscy5TdGVwLWJ5LVN0ZXA6YWxpY2UiLCJuYmYiOjE3NTQwNjAyNDMsImlzcyI6ImRpZDp3ZWI6Zml3YXJlLmdpdGh1Yi5pbzp0dXRvcmlhbHMuU3RlcC1ieS1TdGVwOmFuaW1hbC13ZWxmYXJlIn0.YEoJtrpuR-bxDk-Y8yV0FPcCjtHkczq17vt4_iUV2D-kSbkAFjqkcAj5Vph48O4OeESI8GxoRZRH_yP-oat5hg",
+    "policies": {},
+    "verifiableCredential": {
+        "credentialSubject": {
+            "firstName": "Alice",
+            "lastName": "User",
+            "eMail": "alice@test.com",
+            "roles": [
+                "OPERATOR"
+            ],
+            "id": "did:web:fiware.github.io:tutorials.Step-by-Step:alice"
+        },
+        "issuer": {
+            "id": "did:web:fiware.github.io:tutorials.Step-by-Step:animal-welfare"
+        },
+        "type": [
+            "VerifiableCredential",
+            "OperatorCredential"
+        ],
+        "@context": [
+            "https://www.w3.org/2018/credentials/v1",
+            "https://fiware.github.io/tutorials.Step-by-Step/credentials.jsonld"
+        ],
+        "issuanceDate": "2025-08-01T14:57:23.000Z",
+        "proof": {
+            "type": "JwtProof2020",
+            "jwt": "eyJhbGciOiJFUzI1NksiLCJ0eXAiOiJKV1QifQ.eyJ2YyI6eyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvMjAxOC9jcmVkZW50aWFscy92MSIsImh0dHBzOi8vZml3YXJlLmdpdGh1Yi5pby90dXRvcmlhbHMuU3RlcC1ieS1TdGVwL2NyZWRlbnRpYWxzLmpzb25sZCJdLCJ0eXBlIjpbIlZlcmlmaWFibGVDcmVkZW50aWFsIiwiT3BlcmF0b3JDcmVkZW50aWFsIl0sImNyZWRlbnRpYWxTdWJqZWN0Ijp7ImZpcnN0TmFtZSI6IkFsaWNlIiwibGFzdE5hbWUiOiJVc2VyIiwiZU1haWwiOiJhbGljZUB0ZXN0LmNvbSIsInJvbGVzIjpbIk9QRVJBVE9SIl19fSwic3ViIjoiZGlkOndlYjpmaXdhcmUuZ2l0aHViLmlvOnR1dG9yaWFscy5TdGVwLWJ5LVN0ZXA6YWxpY2UiLCJuYmYiOjE3NTQwNjAyNDMsImlzcyI6ImRpZDp3ZWI6Zml3YXJlLmdpdGh1Yi5pbzp0dXRvcmlhbHMuU3RlcC1ieS1TdGVwOmFuaW1hbC13ZWxmYXJlIn0.YEoJtrpuR-bxDk-Y8yV0FPcCjtHkczq17vt4_iUV2D-kSbkAFjqkcAj5Vph48O4OeESI8GxoRZRH_yP-oat5hg"
+        }
+    }
+}
+```
+
 
 ### Verifying a Verifiable Credential
 
-#### 3️⃣ Request:
+#### ### Verifying a Verifiable Credential
+
+#### 5️⃣ Request:
+
+```console
+
+```
+
+#### Response:
+Request:
+
+```console
+
+```
+
+#### Response:
+
+
+### Verifying a Verifiable Credential
+
+#### 6️⃣ Request:
+
+```console
+
+```
+
+#### Response:
+
+
+### Verifying a Verifiable Credential
+
+#### 7️⃣ Request:
+
+```console
+
+```
+
+#### Response:
+
+
+### Verifying a Verifiable Credential
+
+#### 8️⃣ Request:
+
+```console
+
+```
+
+#### Response:
+
+
+### Verifying a Verifiable Credential
+
+#### 9️⃣ Request:
+
+```console
+
+```
+
+#### Response:
+
+
+### Verifying a Verifiable Credential
+
+#### 1️⃣0️⃣ Request:
 
 ```console
 
