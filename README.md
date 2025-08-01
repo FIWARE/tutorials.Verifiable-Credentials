@@ -34,13 +34,13 @@ commands used to generate credentials using a REST API
 
 # Verifiable Credentials
 
-> Reagan: “But the importance of this treaty transcends numbers. We have listened to the wisdom in an old Russian maxim.
+> **Reagan:** “But the importance of this treaty transcends numbers. We have listened to the wisdom in an old Russian maxim.
 > And I'm sure you're familiar with it, Mr. General Secretary, though my pronunciation may give you difficulty.
 > The maxim is: доверяй, но проверяй - trust, but verify.”
 >
-> Gorbachev: “You repeat that at every meeting.“
+> **Gorbachev:** “You repeat that at every meeting.“
 >
-> Reagan: “I like it.”
+> **Reagan:** “I like it.”
 >
 > ― Remarks on Signing the Intermediate-Range Nuclear Forces Treaty
 
