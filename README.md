@@ -69,7 +69,7 @@ With Verifiable credentials, a check for the validity of the document can be mad
 each separated by a colon. They start with the namespace `did` , followed by a decentralised identifier method (such as `web` or `ethr`,  `key`). The method defines how the rest of the identifier can be decoded and resolved.  For example the term [`did:web`](https://w3c-ccg.github.io/did-method-web/)  refers to a method for creating decentralized identifiers that are hosted on a publicly accessible web domain, `did:ethr` is used by [Etherium-based identities](https://github.com/uport-project/ethr-did-registry) and a [`did:key`](https://w3c-ccg.github.io/did-key-spec/) holds an encoded public key. the remaining sections of the URN will resolve to allow a verifier to check if the identity has been used correctly.
 
 For example `did:web:fiware.github.io:tutorials.Step-by-Step:alice` is referring to a document found at
-[`https://fiware.github.io/tutorials.Step-by-Step/alice/did.json`]
+[`https://fiware.github.io/tutorials.Step-by-Step/alice/did.json`](https://fiware.github.io/tutorials.Step-by-Step/alice/did.json)
 
 ```json
 {
@@ -118,13 +118,11 @@ respectively.
 
 Within the data space, the **Vet** wishes to restrict access to her data to legitmate users only:
 
--  Those who have bought access to her data, who are accredited users of **Vets Mart*
+-  Those who have bought access to her data, who are accredited users of **Vets Mart**
 -  Animal welfare officers who are legally alloweed access who are accredited by the national **Government**
 
 This tutorial will not complete the enforcement of access rules, but will show how accredited users would be
-able to demonstrate that they are legitimately from those organisations.
-
-
+able to demonstrate that they are legitimately from those organisations and hold a specific role.
 
 Therefore the overall architecture will consist of the following elements:
 
@@ -154,7 +152,8 @@ Therefore the overall architecture will consist of the following elements:
     protocol running over HTTP.
   - Displays a running Farm Management Information System (FMIS)
 
-In additionl, our **Vet** will be using a dummy data space connector, it includes:
+In addition, our **Vet** will be protected via a dummy data space connector, the data space connector is spoofing the role of a
+[VC Verifier ](https://github.com/FIWARE/VCVerifier). it in turn connects to some other FIWARE Data Space components:
 
 - A FIWARE [Credentials Configuration Service](https://github.com/FIWARE/credentials-config-service) to hold the location of services it should trust
 - A FIWARE [trusted-issuers-list]https://github.com/FIWARE/trusted-issuers-list/) which returns the list of trusted roles for each issuer's credentials
