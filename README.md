@@ -158,6 +158,9 @@ In addition, our **Vet** will be protected via a dummy data space connector, the
 - A FIWARE [Credentials Configuration Service](https://github.com/FIWARE/credentials-config-service) to hold the location of services it should trust
 - A FIWARE [Trusted Issuers List](https://github.com/FIWARE/trusted-issuers-list/) which returns the list of trusted roles for each issuer's credentials
 
+![](https://fiware.github.io/tutorials.Verifiable-Credentials/img/architecture.png)
+
+
 Since all interactions between the elements are initiated by HTTP requests, the entities can be containerized and run
 from exposed ports.
 
