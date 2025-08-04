@@ -240,6 +240,8 @@ The three-letter claims `iss`, `nbf`, `exp`, `sub` come from [RFC 7519](https://
 `nbf` - not before and `exp` - expiry date to limit a validity of a claim.
 
 
+![](https://fiware.github.io/tutorials.Verifiable-Credentials/img/create-claim.png)
+
 #### 1️⃣ Request:
 
 ```console
@@ -288,6 +290,8 @@ The response is a JWT token which is handed to **Alice** - this the equivalent o
 When going to the **Vet**, **Alice** is challenged if she really does work for **Animal Welfare**, she needs to present one or more credential in a Verifiable Presentation.
 Each credential takes the form of a JWT token. In this case the issuer `iss` is **Alice** herself, and she is also the subject matter `sub`.
 Usually these presentations have an `exp` in the near future to stop potential man-in-the-middle attacks.
+
+![](https://fiware.github.io/tutorials.Verifiable-Credentials/img/create-presentation.png)
 
 #### 2️⃣ Request:
 
