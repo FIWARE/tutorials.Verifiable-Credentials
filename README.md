@@ -576,60 +576,148 @@ curl -L 'localhost:3000/vc/verify' \
 ```
 
 
-### Verifying a Verifiable Credential
+### Using a Verifiable Credentials within a Data Space
 
-#### ### Verifying a Verifiable Credential
+Now that Alice has been given a Verifiable credential, she can use it to claim the role of Operator within the Data Space and gain Access to the Vetenary Records. A First attempt to access the records without holding a token results in an error, indicating that the verifier is present on port `1030`
+
+#### Accessing the Vetenary Records without a Veriable Credential
 
 #### 5️⃣ Request:
 
 ```console
-
-```
-
-#### Response:
-Request:
-
-```console
-
+curl -L 'localhost:1030/ngsi-ld/v1/entities?local=true' \
+-H 'Link: <http://context/ngsi-context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"
 ```
 
 #### Response:
 
+The response is a **401 - Unauthorized** error code with the following response
 
-### Verifying a Verifiable Credential
+```json
+{
+    "type": "urn:dx:as:MissingAuthenticationToken",
+    "title": "Unauthorized",
+    "detail": "message"
+}
+```
+
+
+### Accessing the Vetenary Records with an invalid Veriable Credential
+
+The Verifiable Credential is added as a Bearer token to the Authorization header. The bearer token is a JWT which is then decoded and verified - if the content of the Bearer token does not match the claimed issuer, then the token is rejected.
 
 #### 6️⃣ Request:
 
 ```console
+curl -L 'localhost:1030/ngsi-ld/v1/entities?local=true' \
+-H 'Link: <http://context/ngsi-context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"' \
+-H 'Authorization: Bearer eyJhbGciOiJFUzI1NksiLCJ0eXAiOiJKV1QifQ.eyJ2cCI6eyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvMjAxOC9jcmVkZW50aWFscy92MSJdLCJ0eXBlIjpbIlZlcmlmaWFibGVQcmVzZW50YXRpb24iXSwidmVyaWZpYWJsZUNyZWRlbnRpYWwiOlsiZXlKaGJHY2lPaUpGVXpJMU5rc2lMQ0owZVhBaU9pSktWMVFpZlEuZXlKMll5STZleUpBWTI5dWRHVjRkQ0k2V3lKb2RIUndjem92TDNkM2R5NTNNeTV2Y21jdk1qQXhPQzlqY21Wa1pXNTBhV0ZzY3k5Mk1TSXNJbWgwZEhCek9pOHZabWwzWVhKbExtZHBkR2gxWWk1cGJ5OTBkWFJ2Y21saGJITXVVM1JsY0MxaWVTMVRkR1Z3TDJOeVpXUmxiblJwWVd4ekxtcHpiMjVzWkNKZExDSjBlWEJsSWpwYklsWmxjbWxtYVdGaWJHVkRjbVZrWlc1MGFXRnNJaXdpUkhKcGRtVnljMHhwWTJWdWMyVWlYU3dpWTNKbFpHVnVkR2xoYkZOMVltcGxZM1FpT25zaWFXUWlPaUoxY200NlpISnBkbVZ5Y3kxc2FXTmxibk5sT21Gc2FXTmxPakF3TVNJc0ltNWhiV1VpT2lKQmJHbGpaU0lzSW1SaGRHVlBaa0pwY25Sb0lqb2lNVGs0TkMwd09TMHhOeUlzSW5Cc1lXTmxUMlpDYVhKMGFDSTZJa0psY214cGJpSXNJbVJoZEdWUFprbHpjM1ZsSWpvaU1qQXdOeTB3TVMwd09TSXNJbVJoZEdWUFprVjRjR2x5ZVNJNklqSXdNemN0TURFdE1Ea2lMQ0pwYzNOMWFXNW5RWFYwYUc5eWFYUjVJam9pUkZaTVFTSXNJbXhwWTJWdWMyVk9kVzFpWlhJaU9pSkJURWxEUlRFeU16UTFXRmc1U1Vvek5TSXNJblpsYUdsamJHVkRZWFJsWjI5eWFXVnpJanBiSWtJaUxDSkNNU0lzSWtNaVhYMTlMQ0p6ZFdJaU9pSmthV1E2ZDJWaU9tWnBkMkZ5WlM1bmFYUm9kV0l1YVc4NmRIVjBiM0pwWVd4ekxsTjBaWEF0WW5rdFUzUmxjRHBoYkdsalpTSXNJbTVpWmlJNmJuVnNiQ3dpYVhOeklqb2laR2xrT25kbFlqcG1hWGRoY21VdVoybDBhSFZpTG1sdk9uUjFkRzl5YVdGc2N5NVRkR1Z3TFdKNUxWTjBaWEE2WjI5MkluMC5peUxJaG5Bd3ZzbU90QnVXd3Jid0FSRXVPY0plblZYeUNVQ1dlNk1qakl6NDJqNi1XcVhseE05bk1xV25QeXQwVG92MGFSeTBqSG5KVUFPRVU0TjlaUSJdfSwiaXNzIjoiZGlkOndlYjpmaXdhcmUuZ2l0aHViLmlvOnR1dG9yaWFscy5TdGVwLWJ5LVN0ZXA6Z292In0.PTHHUoGjAT9n_DQukoxYCVZ0o9yjZJGiTBWQ3kI9QxdO1D-TkbBdBRfhzo4-ezRnW4BFpKkse1fsdb_FymtgCw' \
+-H 'Cookie: connect.sid=s%3AfQyNTuX_bUcm7dPusUIRHehr0myIcchy.DvjkMq2W94uKRAIAtCjrz5ZCB52ulI8jB2rMbiWnvwc'
+
 
 ```
 
 #### Response:
 
+```json
+{
+    "type": "urn:dx:as:InvalidAuthenticationToken",
+    "title": "Unauthorized",
+    "detail": "invalid_signature: no matching public key found"
+}
+```
 
-### Verifying a Verifiable Credential
+In the case of a rejected credentila The response is a **401 - Unauthorized** error code with the following response.
+
+Note that a real Credential Verifier would not only check that all the claimed issuers of credentials had really signed each verifiable credential, but also ensure that the `exp` and `nbf` are also in range.
+
+### Accessing the Vetenary Records with a valid Veriable Credential
+
+With a proper Verifiable Presentation, the **Animal** records can be accessed:
 
 #### 7️⃣ Request:
 
 ```console
+curl -L 'localhost:1030/ngsi-ld/v1/entities?local=true' \
+-H 'Link: <http://context/ngsi-context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"' \
+-H 'Authorization: Bearer eyJhbGciOiJFUzI1NksiLCJ0eXAiOiJKV1QifQ.eyJ2cCI6eyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvMjAxOC9jcmVkZW50aWFscy92MSJdLCJ0eXBlIjpbIlZlcmlmaWFibGVQcmVzZW50YXRpb24iXSwidmVyaWZpYWJsZUNyZWRlbnRpYWwiOlsiZXlKaGJHY2lPaUpGVXpJMU5rc2lMQ0owZVhBaU9pSktWMVFpZlEuZXlKMll5STZleUpBWTI5dWRHVjRkQ0k2V3lKb2RIUndjem92TDNkM2R5NTNNeTV2Y21jdk1qQXhPQzlqY21Wa1pXNTBhV0ZzY3k5Mk1TSXNJbWgwZEhCek9pOHZabWwzWVhKbExtZHBkR2gxWWk1cGJ5OTBkWFJ2Y21saGJITXVVM1JsY0MxaWVTMVRkR1Z3TDJOeVpXUmxiblJwWVd4ekxtcHpiMjVzWkNKZExDSjBlWEJsSWpwYklsWmxjbWxtYVdGaWJHVkRjbVZrWlc1MGFXRnNJaXdpVDNCbGNtRjBiM0pEY21Wa1pXNTBhV0ZzSWwwc0ltTnlaV1JsYm5ScFlXeFRkV0pxWldOMElqcDdJbVpwY25OMFRtRnRaU0k2SWtGc2FXTmxJaXdpYkdGemRFNWhiV1VpT2lKVmMyVnlJaXdpWlUxaGFXd2lPaUpoYkdsalpVQjBaWE4wTG1OdmJTSXNJbkp2YkdWeklqcGJJazlRUlZKQlZFOVNJbDE5ZlN3aWMzVmlJam9pWkdsa09uZGxZanBtYVhkaGNtVXVaMmwwYUhWaUxtbHZPblIxZEc5eWFXRnNjeTVUZEdWd0xXSjVMVk4wWlhBNllXeHBZMlVpTENKdVltWWlPakUzTlRRd05qQXlORE1zSW1semN5STZJbVJwWkRwM1pXSTZabWwzWVhKbExtZHBkR2gxWWk1cGJ6cDBkWFJ2Y21saGJITXVVM1JsY0MxaWVTMVRkR1Z3T21GdWFXMWhiQzEzWld4bVlYSmxJbjAuWUVvSnRycHVSLWJ4RGstWTh5VjBGUGNDanRIa2N6cTE3dnQ0X2lVVjJELWtTYmtBRmpxa2NBajVWcGg0OE80T2VFU0k4R3hvUlpSSF95UC1vYXQ1aGciXX0sImlzcyI6ImRpZDp3ZWI6Zml3YXJlLmdpdGh1Yi5pbzp0dXRvcmlhbHMuU3RlcC1ieS1TdGVwOmFsaWNlIn0.6_wuCNurZV5zawDKsPfJEEqWcmTpoTMG7r58HxAKJUkQB2bkRza2C7UoWOFu7DgHqDx9moSrQqrQ0n1Yp9JDDA'
 
 ```
 
 #### Response:
 
+```json
+[
+    {
+        "id": "urn:ngsi-ld:Animal:cow006",
+        "type": "Animal",
+        "fedWith": { "type": "Property", "value": "Oats"},
+        "species": { "type": "Property", "value": "dairy cattle"},
+        "name": { "type": "Property", "value": "Twilight"},
+        "sex": { "type": "VocabProperty", "vocab": "Female"},
+        "phenologicalCondition": { "type": "VocabProperty", "vocab": "femaleAdult"},
+        "healthCondition": {
+            "type": "VocabProperty",
+            "vocab": "healthy",
+            "observedAt": "2024-02-02T15:00:00.000Z"
+        },
+        "reproductiveCondition": {
+           "type": "VocabProperty",
+            "vocab": "noStatus",
+            "observedAt": "2024-02-02T15:00:00.000Z"
+        }
+    },
+    ... etc
+]
+```
 
-### Verifying a Verifiable Credential
+The response contains a series of **Animal** records, however checking the output within the
+[Verifiable Presentation Monitor](http://localhost:3000/vp/monitor) at `http://localhost:3000/vp/monitor`, you will find the
+following output:
+
+```
+OperatorCredential issued by did:web:fiware.github.io:tutorials.Step-by-Step:animal-welfare was NOT TRUSTED
+```
+
+This is because a further check is required. Not only must the Verifiable Credential be signed by the issuer, but the issuer must be a valid issuer of credentials within the data space. The way that a verifier checks this, is that it must contact a trusted issuers list. The location of this list is defined within the configuration service associated to the Verifiable Credentials verifier.
+
+### Checking for trusted issuers
+
+The configuration service is running on port 8081, a listing of valid issuers for the vet can be found by making a service request.
 
 #### 8️⃣ Request:
 
 ```console
-
+curl -L 'localhost:8081/service/vet'
 ```
 
 #### Response:
 
+```json
+{
+    "id": "vet",
+    "defaultOidcScope": "default",
+    "oidcScopes": {
+        "default": [
+            {
+                "type": "VerifiableCredential",
+                "trustedParticipantsLists": [],
+                "trustedIssuersLists": [
+                    "http://trusted-issuers-list:8080"
+                ],
+                "holderVerification": {
+                    "enabled": false,
+                    "claim": "subject"
+                }
+            }
+        ]
+    }
+}
+```
 
-### Verifying a Verifiable Credential
+The response indicates that VerifiableCredentials can be checked against the trusted issuers list found at `http://trusted-issuers-list:8080`
+
+### Reading a trusted issuers list
 
 #### 9️⃣ Request:
 
