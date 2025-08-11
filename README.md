@@ -195,8 +195,10 @@ with the `type: VerifiableCredential` - in the example below, the **Animal Welfa
 the role for **Data Access** are the claim. Since **Animal Welfare** is creating the credential, they are the issuer, and **Alice** is the subject. The issuer
 signs the credential with their private key.
 
-The private key `0b6366519a40eb4f384f7f84cf8bb716683ad1af8adbe60e59fe24ba042e396a` is used for all users throughout the tutorial,
-since the associated public key is the one that has been stored on the public web as a decentralised identifier. The necessary information
+The private key used for signing the credential should not be shared, but for this tutorial,
+`0b6366519a40eb4f384f7f84cf8bb716683ad1af8adbe60e59fe24ba042e396a` is used for all users throughout
+the requests,
+since the associated public key is the one that has been stored on the public web as a [decentralised identifier](https://fiware.github.io//tutorials.Step-by-Step/alice/did.json). The necessary information
 can be generated using a script as shown.
 
 
@@ -209,7 +211,7 @@ const size = parseInt(process.argv.slice(2)[0]) || 32;
 const randomString = crypto.randomBytes(size).toString("hex");
 const key = randomString;
 
-console.log(`Key (hex): ${key}`)  // ee48d32e6c724c4d
+console.log(`Key (hex): ${key}`)  // 0b6366519a40eb4f384 etc.
 
 // Calculate the `secp256k1` curve and build the public key
 const ec = new elliptic.ec('secp256k1');
@@ -580,7 +582,7 @@ curl -L 'localhost:3000/vc/verify' \
 
 Now that Alice has been given a Verifiable credential, she can use it to claim the role of Operator within the Data Space and gain Access to the Vetenary Records. A First attempt to access the records without holding a token results in an error, indicating that the verifier is present on port `1030`
 
-#### Accessing the Vetenary Records without a Veriable Credential
+#### Accessing the Vetenary Records without a Verifiable Credential
 
 #### 5️⃣ Request:
 
@@ -602,7 +604,7 @@ The response is a **401 - Unauthorized** error code with the following response
 ```
 
 
-### Accessing the Vetenary Records with an invalid Veriable Credential
+### Accessing the Vetenary Records with an invalid Verifiable Credential
 
 The Verifiable Credential is added as a Bearer token to the Authorization header. The bearer token is a JWT which is then decoded and verified - if the content of the Bearer token does not match the claimed issuer, then the token is rejected.
 
@@ -631,7 +633,7 @@ In the case of a rejected credentila The response is a **401 - Unauthorized** er
 
 Note that a real Credential Verifier would not only check that all the claimed issuers of credentials had really signed each verifiable credential, but also ensure that the `exp` and `nbf` are also in range.
 
-### Accessing the Vetenary Records with a valid Veriable Credential
+### Accessing the Vetenary Records with a valid Verifiable Credential
 
 With a proper Verifiable Presentation, the **Animal** records can be accessed:
 
@@ -679,7 +681,7 @@ following output:
 OperatorCredential issued by did:web:fiware.github.io:tutorials.Step-by-Step:animal-welfare was NOT TRUSTED
 ```
 
-This is because a further check is required. Not only must the Verifiable Credential be signed by the issuer, but the issuer must be a valid issuer of credentials within the data space. The way that a verifier checks this, is that it must contact a trusted issuers list. The location of this list is defined within the configuration service associated to the Verifiable Credentials verifier.
+This is because in reality, a further check is required. Not only must the Verifiable Credential be signed by the issuer, but the issuer must be a valid issuer of credentials within the data space. The way that a verifier checks this, is that it must contact a trusted issuers list. The location of this list is defined within the configuration service associated to the Verifiable Credentials verifier.
 
 ### Checking for trusted issuers
 
@@ -719,24 +721,188 @@ The response indicates that VerifiableCredentials can be checked against the tru
 
 ### Reading a trusted issuers list
 
+The trusted issuers list is usually maintained by the operator of the data space. It holds information about who is a valid user, and what sort of actions that issuer is allowed to generate, A trusted issuers list can be found running on port 8080 - initially there are no valid issuers available.
+
 #### 9️⃣ Request:
 
 ```console
-
+curl -L 'localhost:8080/v4/issuers'
 ```
 
 #### Response:
 
+```json
+{
+    "self": "/v4/issuers/",
+    "items": [],
+    "total": 0,
+    "pageSize": 0,
+    "links": null
+}
+```
 
-### Verifying a Verifiable Credential
+
+### Adding a trusted issuer to the trusted issuers list
+
+To Add a trusted issuer, make a **POST** request to the `/issuer` endpoint. You can see here that the  issuer is `did:web:fiware.github.io:tutorials.Step-by-Step:animal-welfare` and that organisation is allowed to Create **OperatorCredentials** with two separate roles - `OPERATOR` and `VISITOR`
 
 #### 1️⃣0️⃣ Request:
 
 ```console
+curl -L 'localhost:8080/issuer' \
+-H 'Content-Type: application/json' \
+-d '{
+  "did": "did:web:fiware.github.io:tutorials.Step-by-Step:animal-welfare",
+  "credentials": [
+    {
+      "validFor": {
+        "from": "2017-07-21T17:32:28Z",
+        "to": "2023-07-21T17:32:28Z"
+      },
+      "credentialsType": "OperatorCredential",
+      "claims": [
+        {
+          "name": "roles",
+          "allowedValues": [
+            "OPERATOR",
+            "VISITOR"
+          ]
+        }
+      ]
+    }
+  ]
+}'
+```
+
+
+### Reading from the trusted issuers list
+
+
+This trusted issuers list is able to retrieve issuer rights in two different formats. Initially we shall retrieve plain-text issuer information by making a **GET** request to the
+`/issuer/did:web:fiware.github.io:tutorials.Step-by-Step:animal-welfare` endpoint
+
+#### 1️⃣1️⃣ Request:
+
+```console
+curl -L 'localhost:8080/issuer/did:web:fiware.github.io:tutorials.Step-by-Step:animal-welfare'
+```
+
+
+#### Response:
+
+The response can be seen below
+
+```json
+{
+    "did": "did:web:fiware.github.io:tutorials.Step-by-Step:animal-welfare",
+    "credentials": [
+        {
+            "credentialsType": "OperatorCredential",
+            "claims": [
+                {
+                    "name": "roles",
+                    "allowedValues": [
+                        "OPERATOR",
+                        "VISITOR"
+                    ]
+                }
+            ]
+        }
+    ]
+}
+```
+
+
+#### 1️⃣2️⃣  Request:
+
+The trusted issuers list is able to retrieve issuer data in [EBSI compatible](https://hub.ebsi.eu/#/) format
+
+
+```console
+curl -L 'localhost:8080/v4/issuers/did:web:fiware.github.io:tutorials.Step-by-Step:animal-welfare'
+```
+
+
+#### Response:
+
+The response can be seen below, where the `hash` and `body` are the sha256 hash of the payload
+body, and a base64 encoded string respectively.
+
+
+```json
+{
+    "did": "did:web:fiware.github.io:tutorials.Step-by-Step:animal-welfare",
+    "attributes": [
+        {
+            "hash": "LIayBgwZ84KzjTIe9bHQfKE1/NRJIhPHrWE3NUiwuBI=",
+            "body": "eyJjcmVkZW50aWFsc1R5cGUiOiJPcGVyYXRvckNyZWRlbnRpYWwiLCJjbGFpbXMiOlt7Im5hbWUiOiJyb2xlcyIsImFsbG93ZWRWYWx1ZXMiOlsiT1BFUkFUT1IiLCJWSVNJVE9SIl19XX0=",
+            "issuerType": "Undefined"
+        }
+    ]
+}
+```
+
+
+
+Now, with a proper Verifiable Presentation, the **Animal** records can be accessed:
+
+#### 1️⃣2️⃣  Request:
+
+```console
+curl -L 'localhost:1030/ngsi-ld/v1/entities?local=true' \
+-H 'Link: <http://context/ngsi-context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"' \
+-H 'Authorization: Bearer eyJhbGciOiJFUzI1NksiLCJ0eXAiOiJKV1QifQ.eyJ2cCI6eyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvMjAxOC9jcmVkZW50aWFscy92MSJdLCJ0eXBlIjpbIlZlcmlmaWFibGVQcmVzZW50YXRpb24iXSwidmVyaWZpYWJsZUNyZWRlbnRpYWwiOlsiZXlKaGJHY2lPaUpGVXpJMU5rc2lMQ0owZVhBaU9pSktWMVFpZlEuZXlKMll5STZleUpBWTI5dWRHVjRkQ0k2V3lKb2RIUndjem92TDNkM2R5NTNNeTV2Y21jdk1qQXhPQzlqY21Wa1pXNTBhV0ZzY3k5Mk1TSXNJbWgwZEhCek9pOHZabWwzWVhKbExtZHBkR2gxWWk1cGJ5OTBkWFJ2Y21saGJITXVVM1JsY0MxaWVTMVRkR1Z3TDJOeVpXUmxiblJwWVd4ekxtcHpiMjVzWkNKZExDSjBlWEJsSWpwYklsWmxjbWxtYVdGaWJHVkRjbVZrWlc1MGFXRnNJaXdpVDNCbGNtRjBiM0pEY21Wa1pXNTBhV0ZzSWwwc0ltTnlaV1JsYm5ScFlXeFRkV0pxWldOMElqcDdJbVpwY25OMFRtRnRaU0k2SWtGc2FXTmxJaXdpYkdGemRFNWhiV1VpT2lKVmMyVnlJaXdpWlUxaGFXd2lPaUpoYkdsalpVQjBaWE4wTG1OdmJTSXNJbkp2YkdWeklqcGJJazlRUlZKQlZFOVNJbDE5ZlN3aWMzVmlJam9pWkdsa09uZGxZanBtYVhkaGNtVXVaMmwwYUhWaUxtbHZPblIxZEc5eWFXRnNjeTVUZEdWd0xXSjVMVk4wWlhBNllXeHBZMlVpTENKdVltWWlPakUzTlRRd05qQXlORE1zSW1semN5STZJbVJwWkRwM1pXSTZabWwzWVhKbExtZHBkR2gxWWk1cGJ6cDBkWFJ2Y21saGJITXVVM1JsY0MxaWVTMVRkR1Z3T21GdWFXMWhiQzEzWld4bVlYSmxJbjAuWUVvSnRycHVSLWJ4RGstWTh5VjBGUGNDanRIa2N6cTE3dnQ0X2lVVjJELWtTYmtBRmpxa2NBajVWcGg0OE80T2VFU0k4R3hvUlpSSF95UC1vYXQ1aGciXX0sImlzcyI6ImRpZDp3ZWI6Zml3YXJlLmdpdGh1Yi5pbzp0dXRvcmlhbHMuU3RlcC1ieS1TdGVwOmFsaWNlIn0.6_wuCNurZV5zawDKsPfJEEqWcmTpoTMG7r58HxAKJUkQB2bkRza2C7UoWOFu7DgHqDx9moSrQqrQ0n1Yp9JDDA'
 
 ```
 
 #### Response:
+
+```json
+[
+    {
+        "id": "urn:ngsi-ld:Animal:cow006",
+        "type": "Animal",
+        "fedWith": { "type": "Property", "value": "Oats"},
+        "species": { "type": "Property", "value": "dairy cattle"},
+        "name": { "type": "Property", "value": "Twilight"},
+        "sex": { "type": "VocabProperty", "vocab": "Female"},
+        "phenologicalCondition": { "type": "VocabProperty", "vocab": "femaleAdult"},
+        "healthCondition": {
+            "type": "VocabProperty",
+            "vocab": "healthy",
+            "observedAt": "2024-02-02T15:00:00.000Z"
+        },
+        "reproductiveCondition": {
+           "type": "VocabProperty",
+            "vocab": "noStatus",
+            "observedAt": "2024-02-02T15:00:00.000Z"
+        }
+    },
+    ... etc
+]
+```
+
+The response contains a series of **Animal** records, and checking the output within the
+[Verifiable Presentation Monitor](http://localhost:3000/vp/monitor) at `http://localhost:3000/vp/monitor`, you will find the
+following output:
+
+```text
+The following claims were made [{"name":"roles","allowedValues":["VISITOR","OPERATOR"]}]
+
+{
+  "firstName": "Alice",
+  "lastName": "User",
+  "eMail": "alice@test.com",
+  "roles": [
+    "OPERATOR"
+  ],
+  "id": "did:web:fiware.github.io:tutorials.Step-by-Step:alice"
+}
+```
+
+
+As you can see the `role:OPERATOR` is indeed a valid setting for `did:web:fiware.github.io:tutorials.Step-by-Step:animal-welfare` to create. Matching these values
+would allow a real data space connector to permit or deny access using their PEP.
 
 
 

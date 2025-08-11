@@ -812,4 +812,57 @@ curl -s -o /dev/null -X POST 'http://'"${CONTEXT_BROKER}"'/ngsi-ld/v1/entityOper
   }
 ]'
 
+curl -s -o /dev/null -X POST 'http://'"${CONTEXT_BROKER}"'/ngsi-ld/v1/csourceRegistrations/' \
+-H 'Link: <'"${TUTORIAL_DATA_MODELS_CONTEXT}"'> rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"' \
+-H 'Content-Type: application/json' \
+-d '{
+    "type": "ContextSourceRegistration",
+    "information": [
+        {
+            "entities": [
+                {
+                    "type": "AgriParcel"
+                },
+                {
+                    "type": "Animal"
+                }
+            ]
+        }
+    ],
+    "mode": "redirect",
+    "management": {
+        "timeout": 1000
+    },
+    "operations": [
+        "redirectionOps"
+    ],
+    "endpoint": "http://farmer"
+}'
+
+
+curl -s -o /dev/null -X POST 'http://'"${CONTEXT_BROKER}"'/ngsi-ld/v1/csourceRegistrations/' \
+-H 'Link: <'"${TUTORIAL_DATA_MODELS_CONTEXT}"'> rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"' \
+-H 'NGSILD-Tenant: farmer' \
+-H 'Content-Type: application/json' \
+-d '{
+    "type": "ContextSourceRegistration",
+    "information": [
+        {
+            "entities": [
+                {
+                    "type": "Animal"
+                }
+            ]
+        }
+    ],
+    "mode": "inclusive",
+    "operations": [
+        "federationOps"
+    ],
+    "management": {
+        "timeout": 1000
+    },
+    "endpoint": "http://vet"
+}'
+
 echo -e "\n \033[1;32mdone\033[0m"
