@@ -336,7 +336,7 @@ volumes:
   mongo-config: ~
   mysql-trust-db: ~
   mysql-config-db: ~
-    redis-data: ~
+  redis-data: ~
   data-models:
     driver: local
     driver_opts:
