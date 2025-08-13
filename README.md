@@ -700,19 +700,32 @@ curl -L 'localhost:8081/service/vet'
     "id": "vet",
     "defaultOidcScope": "default",
     "oidcScopes": {
-        "default": [
-            {
-                "type": "VerifiableCredential",
-                "trustedParticipantsLists": [],
-                "trustedIssuersLists": [
-                    "http://trusted-issuers-list:8080"
-                ],
-                "holderVerification": {
-                    "enabled": false,
-                    "claim": "subject"
+        "default": {
+            "credentials": [
+                {
+                    "type": "VerifiableCredential",
+                    "trustedParticipantsLists": [],
+                    "trustedIssuersLists": [
+                        "http://trusted-issuers-list:8080"
+                    ],
+                    "holderVerification": {
+                        "enabled": false,
+                        "claim": "subject"
+                    },
+                    "requireCompliance": false,
+                    "jwtInclusion": {
+                        "enabled": true,
+                        "fullInclusion": false,
+                        "claimsToInclude": []
+                    }
                 }
-            }
-        ]
+            ],
+            "presentationDefinition": {
+                "id": null,
+                "input_descriptors": null
+            },
+            "flatClaims": false
+        }
     }
 }
 ```

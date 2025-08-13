@@ -113,6 +113,15 @@ waitForMongo () {
 	done
 }
 
+waitForIoTAgent () {
+	echo -e "\n⏳ Waiting for \033[1;36mIoT-Agent\033[0m to be available\n"
+	while [ `docker run --network fiware_default --rm quay.io/curl/curl:${CURL_VERSION} -s -o /dev/null -w %{http_code} 'http://iot-agent:4041/version'` -eq 000 ]
+ 	do 
+	  echo -e "IoT Agent HTTP state: " `curl -s -o /dev/null -w %{http_code} 'http://localhost:4041/version'` " (waiting for 200)"
+	  sleep 6
+	done
+}
+
 loadData () {
 	echo ""
 	waitForUserContext
@@ -121,7 +130,16 @@ loadData () {
 		-e CONTEXT_BROKER=${CONTEXT_BROKER} \
 		-e TUTORIAL_DATA_MODELS_CONTEXT=${CONTEXT} \
 		--entrypoint /bin/ash quay.io/curl/curl:${CURL_VERSION} /import-data
-
+	waitForIoTAgent
+	docker run --rm -v $(pwd)/provision-devices:/provision-devices \
+		--network fiware_default \
+		-e CONTEXT_BROKER=${CONTEXT_BROKER} \
+		-e TUTORIAL_DATA_MODELS_CONTEXT=${CONTEXT} \
+		--entrypoint /bin/ash quay.io/curl/curl:${CURL_VERSION} /provision-devices
+	docker run --rm -v $(pwd)/link-devices:/link-devices \
+		--network fiware_default \
+		--entrypoint /bin/ash quay.io/curl/curl:${CURL_VERSION} /link-devices
+	echo ""
 }
 
 stoppingContainers () {

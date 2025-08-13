@@ -2,7 +2,7 @@
 --
 -- Host: localhost    Database: db
 -- ------------------------------------------------------
--- Server version	8.1.0
+-- Server version 8.1.0
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -44,8 +44,36 @@ CREATE TABLE `flyway_schema_history` (
 
 LOCK TABLES `flyway_schema_history` WRITE;
 /*!40000 ALTER TABLE `flyway_schema_history` DISABLE KEYS */;
-INSERT INTO `flyway_schema_history` VALUES (1,'0.0.1','initial-migration','SQL','V0_0_1__initial-migration.sql',-1767291177,'user','2025-02-19 11:58:53',82,1),(2,'1.0.2','minimal table','SQL','V1_0_2__minimal_table.sql',-454303568,'user','2025-02-19 11:58:53',54,1);
+INSERT INTO `flyway_schema_history` VALUES (1,'0.0.1','initial-migration','SQL','V0_0_1__initial-migration.sql',-1767291177,'user','2025-08-13 14:51:32',92,1),(2,'1.0.2','minimal table','SQL','V1_0_2__minimal_table.sql',-454303568,'user','2025-08-13 14:51:32',73,1),(3,'2.0.0','clean tables','SQL','V2_0_0__clean_tables.sql',-1059881192,'user','2025-08-13 14:51:32',81,1),(4,'2.0.1','add flat claim flag','SQL','V2_0_1__add_flat_claim_flag.sql',485455161,'user','2025-08-13 14:51:32',19,1);
 /*!40000 ALTER TABLE `flyway_schema_history` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `scope_entry`
+--
+
+DROP TABLE IF EXISTS `scope_entry`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `scope_entry` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `service_id` varchar(255) DEFAULT NULL,
+  `scope_key` varchar(255) DEFAULT NULL,
+  `credentials` longtext NOT NULL,
+  `presentation_definition` longtext NOT NULL,
+  `flat_claims` tinyint(1) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `scope_entry`
+--
+
+LOCK TABLES `scope_entry` WRITE;
+/*!40000 ALTER TABLE `scope_entry` DISABLE KEYS */;
+INSERT INTO `scope_entry` VALUES (1,'vet','default','[{\"credentialType\":\"VerifiableCredential\",\"verifyHolder\":false,\"requireCompliance\":false,\"jwtInclusion\":{\"enabled\":true,\"fullInclusion\":false},\"holderClaim\":\"subject\",\"trustedLists\":[{\"type\":\"TRUSTED_ISSUERS\",\"listType\":\"ebsi\",\"endpoint\":\"http://trusted-issuers-list:8080\"}]}]','{}',0);
+/*!40000 ALTER TABLE `scope_entry` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -57,8 +85,7 @@ DROP TABLE IF EXISTS `service`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `service` (
   `id` varchar(255) NOT NULL,
-  `default_oidc_scope` varchar(255) NOT NULL,
-  `oidc_scopes` longtext NOT NULL,
+  `default_oidc_scope` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -69,7 +96,7 @@ CREATE TABLE `service` (
 
 LOCK TABLES `service` WRITE;
 /*!40000 ALTER TABLE `service` DISABLE KEYS */;
-INSERT INTO `service` VALUES ('vet','default','{\"default\":[{\"credentialType\":\"VerifiableCredential\",\"trustedLists\":[{\"type\":\"TRUSTED_ISSUERS\",\"listType\":\"EBSI\",\"endpoint\":\"http://trusted-issuers-list:8080\"}],\"verifyHolder\":false,\"holderClaim\":\"subject\"}]}');
+INSERT INTO `service` VALUES ('vet','default');
 /*!40000 ALTER TABLE `service` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -82,4 +109,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-02-19 13:12:29
+-- Dump completed on 2025-08-13 15:10:13
