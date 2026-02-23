@@ -174,7 +174,7 @@ the repository. Please clone the repository and create the necessary images by r
 
 ```console
 git clone https://github.com/FIWARE/tutorials.Verifiable-Credentials.git
-cd tutorials.Linked-Data
+cd tutorials.Verifiable-Credentials
 git checkout NGSI-LD
 
 ./services orion|scorpio|stellio
